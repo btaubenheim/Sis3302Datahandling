@@ -1,0 +1,4 @@
+*.pyc
+temp.py
+pathfinder.py
+*.swp

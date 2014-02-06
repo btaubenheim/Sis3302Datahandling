@@ -6,21 +6,36 @@ Created on Mon Oct  8 10:35:34 2012
 """
 import ROOT
 import os
+import sys
+import array
+import pathfinder
+sys.path.append('/Users/nedmdaq/software/Sis3302DatahandlingNedmDAQ2')
+from convert_sis3302_files import WFConvert
+
+#os.chdir('/Users/nedmdaq/Desktop/Data/Rootified')
+
+#ROOT.gSystem.Load(" ~/software/OrcaROOT/Bindings/libPyOrcaROOT")
+#ROOT.gSystem.Load("~/software/TWaveform/lib/libWaveWaveBase")
+ROOT.gSystem.Load(pathfinder.libPyOrcaROOT)
+ROOT.gSystem.Load(pathfinder.libWaveWaveBase)
 
 class orcadatamanipulation(object):
     def __init__(self, orcafile, rootfile, channelnum, numtriggers):
         """
-        run source ~/.bash_profile first
+        functions to transform Orca files to root or ascii(averaged) files  
         """
-        self.orcafile=orcafile
+        self.orcafile=pathfinder.OrcaFileFolder+orcafile
         self.channelnum=channelnum
-        self.rootfile=rootfile
+        self.rootfile=pathfinder.ROOTFileFolder+rootfile
         self.numtriggers=numtriggers
-        ROOT.gSystem.Load("~/root/TWaveform/lib/libWaveWaveBase")
-        self.rootfilefolder="/home/bernd/Dropbox/EXC_BerndShare/AnalyzeThis/greta_MarkIV_"#rootify doesnt yet save .root files
+        ROOT.gSystem.Load(pathfinder.libWaveWaveBase)
+        self.rootfilefolder=pathfinder.ROOTFileFolder
         self.index=self.orcafile.rfind("/",0,len(self.orcafile))
-        self.txtfilepath=self.orcafile[0:self.index+1]
+        #self.txtfilepath=self.orcafile[0:self.index+1]
+	#self.txtfilepath="/Users/nedmdaq/Desktop/Data/Txtified/"
+	self.txtfilepath=pathfinder.TxtFileFolder
     def rootify(self):
+	""" obsolete , use rooter """
        # os.system("export ROOTSYS=/home/bernd/Desktop/bernd/root/root")
         #os.system("export PYTHONPATH=${ROOTSYS}/lib")
         #os.system("export LD_LIBRARY_PATH=${ROOTSYS}/lib:${LD_LIBRARY_PATH}")
@@ -33,36 +48,70 @@ class orcadatamanipulation(object):
         runnumber.lower()
         self.rootfile=self.rootfilefolder+runnumber+".root"
         print self.rootfile
+    def rooter(self):
+	reader = ROOT.ORFileReader()
+        #for afile in self.orcafile: reader.AddFileToProcess(afile)
+	reader.AddFileToProcess(self.orcafile)
+	print self.orcafile
+        mgr = ROOT.ORDataProcManager(reader)
+#        fw = ROOT.ORFileWriter('/Users/nedmdaq/Desktop/Data/Rootified/pref')
+	fw = ROOT.ORFileWriter(pathfinder.ROOTFileFolder+"pref_")
+        run_notes = ROOT.ORRunNotesProcessor()
+        xycom = ROOT.ORXYCom564Decoder()
+        rdTree = ROOT.ORBasicRDTreeWriter(xycom, "xyCom")
+
+        sisGen = ROOT.ORSIS3302GenericDecoder()
+        wf = WFConvert(sisGen, "sisDec")
+        mgr.AddProcessor(fw)
+        mgr.AddProcessor(run_notes)
+        mgr.AddProcessor(wf)
+
+        mgr.ProcessDataStream()
+        index=self.orcafile.rfind("/",0,len(self.orcafile))
+        runnumber=self.orcafile[index+1:len(self.orcafile)].lower()
+        runnumber.lower()
+        self.rootfile=self.rootfilefolder+"pref_"+runnumber+".root"
+        print self.rootfile
+
+
     def draw_all_counts(self, event=None):
-        file=ROOT.TFile(self.rootfile)
+        self.feil=ROOT.TFile(self.rootfile)
+	self.feil.Get('sisDec')
         if event:
-            file.sisDec.GetEntry(event)
-            file.sisDec.Waveform.GimmeHist().Draw()
+            self.feil.sisDec.GetEntry(event)
+            self.feil.sisDec.wf.GimmeHist().Draw()
             raw_input("jump ma die leider weider")
         else:    
             for n in range(self.channelnum, self.channelnum*8+self.numtriggers*8, 8):
-                file.sisDec.GetEntry(n)
-                file.sisDec.Waveform.GimmeHist().Draw()
+                self.feil.sisDec.GetEntry(n)
+                self.feil.sisDec.wf.GimmeHist().Draw()
                 raw_input("jump ma die leider weider")
-    def txtify(self, event=None):
+    def txtify(self, averages=10, event=None):
         """
         save each count to a .txt file 
         """
-        file=ROOT.TFile(self.rootfile)
+        feil=ROOT.TFile(self.rootfile)
+	feil.Get('sisDec')
         run=self.orcafile[self.index+1:len(self.orcafile)]
+#        if event:
+#	        feil.sisDec.GetEntry(event)
+#	        feil.sisDec.GetEntry(event)
+#        if event:
+#	        feil.sisDec.GetEntry(event)
+#	feil.Get('sisDec')
+
         if event:
-	        file.sisDec.GetEntry(event)
+	        feil.sisDec.GetEntry(event)
 	        FILE=open(self.txtfilepath+run+"count"+str(event)+".txt","w")
-	        data=file.sisDec.Waveform.GetData()
-	        for i in range(0,file.sisDec.Waveform.GetLength(),10):
-		        FILE.write(str(data.__getitem__(i))+"\n")
+	        data=feil.sisDec.wf.GetData()
+	        for i in range(0,feil.sisDec.wf.GetLength(),averages):
+			avg=0
+			for j in range (averages):
+				avg=avg+data.__getitem__(i+j)
+		        FILE.write(str(avg/averages)+"\n")
 	        FILE.close()
         else:            
 
             for n in range(self.channelnum, self.channelnum*8+self.numtriggers*8, 8):
-	            file.sisDec.GetEntry(n)
+	            feil.sisDec.GetEntry(n)
 	            FILE=open(self.txtfilepath+run+"count"+str(n)+".txt","w")
-	            data=file.sisDec.Waveform.GetData()
-	            for i in range(0,file.sisDec.Waveform.GetLength(),10):
-		            FILE.write(str(data.__getitem__(i))+"\n")
-	            FILE.close()
