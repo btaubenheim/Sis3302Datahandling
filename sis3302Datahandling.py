@@ -9,13 +9,13 @@ import os
 import sys
 import array
 import pathfinder
-sys.path.append('/Users/nedmdaq/software/Sis3302DatahandlingNedmDAQ2')
+
 from convert_sis3302_files import WFConvert
 
-#os.chdir('/Users/nedmdaq/Desktop/Data/Rootified')
 
-#ROOT.gSystem.Load(" ~/software/OrcaROOT/Bindings/libPyOrcaROOT")
-#ROOT.gSystem.Load("~/software/TWaveform/lib/libWaveWaveBase")
+
+
+
 ROOT.gSystem.Load(pathfinder.libPyOrcaROOT)
 ROOT.gSystem.Load(pathfinder.libWaveWaveBase)
 
