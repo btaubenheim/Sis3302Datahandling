@@ -1,10 +1,12 @@
 import ROOT
 import sys
 import array
-import pathfinder
+import pathfinder as p
+print sys.path
+print(p.libPyOrcaROOT)
 
-ROOT.gSystem.Load(pathfinder.libPyOrcaROOT)
-ROOT.gSystem.Load(pathfinder.libWaveWaveBase)
+ROOT.gSystem.Load(p.libPyOrcaROOT)
+ROOT.gSystem.Load(p.libWaveWaveBase)
 
 class WFConvert(ROOT.ORPyTreeWriter):
     def __init__(self, dec, treeName):
