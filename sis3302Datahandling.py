@@ -52,11 +52,13 @@ class orcadatamanipulation(object):
     def rooter(self):
 	reader = ROOT.ORFileReader()
         #for afile in self.orcafile: reader.AddFileToProcess(afile)
-	print 'this file is used:'
-	print self.orcafile
-	self.orcafile
+	if self.orcafile:
+		print 'this file is used:'
+		print self.orcafile
+	else:
+		print "no orcafile loaded"
+		return
 	reader.AddFileToProcess(str(self.orcafile))
-	print self.orcafile
         mgr = ROOT.ORDataProcManager(reader)
 #        fw = ROOT.ORFileWriter('/Users/nedmdaq/Desktop/Data/Rootified/pref')
 	fw = ROOT.ORFileWriter(self.rootfilefolder+"pref")
@@ -79,24 +81,59 @@ class orcadatamanipulation(object):
 
 
     def draw_all_counts(self, event=None):
-        self.feil=ROOT.TFile(self.rootfile)
+	if self.channelnum and self.numtriggers:
+		event=self.channelnum+8*self.numtriggers
+	else:
+		event=None
+	if self.rootfile:
+		print "this rootfile is used: "+self.rootfile
+	else:
+		if self.orcafile:
+			self.rooter()
+			print "orcafile used: "+self.orcafile
+		else:
+			print "no file loaded"
+			return	
+	self.feil=ROOT.TFile(self.rootfile)
 	self.feil.Get('sisDec')
         if event:
             self.feil.sisDec.GetEntry(event)
             self.feil.sisDec.wf.GimmeHist().Draw()
             raw_input("jump ma die leider weider")
         else:    
-            for n in range(self.channelnum, self.channelnum*8+self.numtriggers*8, 8):
+            #for n in range(self.channelnum, self.channelnum*8+self.numtriggers*8, 8):
+	    n=self.channelnum
+	    while self.feil.sisDec.GetEntry(n):
+
                 self.feil.sisDec.GetEntry(n)
                 self.feil.sisDec.wf.GimmeHist().Draw()
                 raw_input("jump ma die leider weider")
+	        n=n+8
     def txtify(self, averages=10, event=None):
         """
         save each count to a .txt file 
         """
-        feil=ROOT.TFile(self.rootfile)
+#	if orcafile:
+#		run=self.orcafile[self.index+1:len(self.orcafile)]
+	if self.rootfile:
+		print "this rootfile is used: "+self.rootfile
+	else:
+		if self.orcafile:
+			self.rooter()
+			print "orcafile used: "+self.orcafile
+		else:
+			print "no file loaded"
+			return	
+	if self.channelnum and self.numtriggers:
+		event=channelnum+8*numtriggers
+	else: 
+		event=None
+	feil=ROOT.TFile(self.rootfile)
 	feil.Get('sisDec')
-        run=self.orcafile[self.index+1:len(self.orcafile)]
+	index=self.rootfile.rfind("_",0,len(self.rootfile))
+	run=self.rootfile[index+1:len(self.rootfile)].lower()[0:-5]
+        run.lower()
+
 #        if event:
 #	        feil.sisDec.GetEntry(event)
 #	        feil.sisDec.GetEntry(event)
@@ -115,7 +152,17 @@ class orcadatamanipulation(object):
 		        FILE.write(str(avg/averages)+"\n")
 	        FILE.close()
         else:            
-
-            for n in range(self.channelnum, self.channelnum*8+self.numtriggers*8, 8):
-	            feil.sisDec.GetEntry(n)
+		
+           # for n in range(self.channelnum, self.channelnum*8+self.numtriggers*8, 8):
+	    n=self.channelnum
+	    while feil.sisDec.GetEntry(n):
+		    feil.sisDec.GetEntry(n)
 	            FILE=open(self.txtfilefolder+run+"count"+str(n)+".txt","w")
+    	            data=feil.sisDec.wf.GetData()
+	            for i in range(0,feil.sisDec.wf.GetLength(),averages):
+			avg=0
+			for j in range (averages):
+				avg=avg+data.__getitem__(i+j)
+		        FILE.write(str(avg/averages)+"\n")
+	            FILE.close()
+		    n=n+8
