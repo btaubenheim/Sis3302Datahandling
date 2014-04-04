@@ -140,17 +140,15 @@ class orcadatamanipulation(object):
         if event != None:
 	        feil.sisDec.GetEntry(event)
 	        FILE=self.npyfilefolder+run+"count"+str(event)
-		arr=numpy.array(feil.sisDec.wf,dtype="int32")
-		print "before saving"
+		arr=numpy.array(feil.sisDec.wf,dtype="int16")
 		numpy.save(FILE,arr)
-		print "after saving"
 	else:            
            # for n in range(self.channelnum, self.channelnum*8+self.numtriggers*8, 8):
 	    n=self.channelnum
 	    while feil.sisDec.GetEntry(n):
 		feil.sisDec.GetEntry(n)
 		FILE=self.npyfilefolder+run+"count"+str(n)
-	  	arr=numpy.array(feil.sisDec.wf,dtype="int32")
+	  	arr=numpy.array(feil.sisDec.wf,dtype="int16")
 		numpy.save(FILE,arr)
 		n=n+8
 		print arr.dtype
