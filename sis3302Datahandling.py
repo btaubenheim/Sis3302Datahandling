@@ -1,9 +1,10 @@
-8# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Created on Mon Oct  8 10:35:34 2012
 
 @author: bernd
 """
+import numpy
 import ROOT
 import os
 import sys
@@ -31,6 +32,7 @@ class orcadatamanipulation(object):
         ROOT.gSystem.Load(pathfinder.libWaveWaveBase)
         self.rootfilefolder=pathfinder.ROOTFileFolder
 	self.orcafilefolder=pathfinder.OrcaFileFolder
+	self.npyfilefolder=pathfinder.NpyFileFolder
 	self.index=self.orcafile.rfind("/",0,len(self.orcafile))
         #self.txtfilepath=self.orcafile[0:self.index+1]
 	#self.txtfilepath="/Users/nedmdaq/Desktop/Data/Txtified/"
@@ -109,6 +111,50 @@ class orcadatamanipulation(object):
                 self.feil.sisDec.wf.GimmeHist().Draw()
                 raw_input("jump ma die leider weider")
 	        n=n+8
+    def numpyfy(self, event=None):
+	"""
+	save counts as numpy arrays
+	"""
+	if self.rootfile:
+		print "this rootfile is used: "+self.rootfile
+	else:
+		if self.orcafile:
+			self.rooter()
+			print "orcafile used: "+self.orcafile
+		else:
+			print "no file loaded"
+			return	
+	if self.channelnum and self.numtriggers!=None:
+		event=self.channelnum+8*self.numtriggers
+	else: 
+		event=None
+	feil=ROOT.TFile(self.rootfile)
+	feil.Get('sisDec')
+	index=self.rootfile.rfind("_",0,len(self.rootfile))
+	run=self.rootfile[index+1:len(self.rootfile)].lower()[0:-5]
+        run.lower()
+	
+	print "event:"
+	print event
+
+        if event != None:
+	        feil.sisDec.GetEntry(event)
+	        FILE=self.npyfilefolder+run+"count"+str(event)
+		arr=numpy.array(feil.sisDec.wf,dtype="int32")
+		print "before saving"
+		numpy.save(FILE,arr)
+		print "after saving"
+	else:            
+           # for n in range(self.channelnum, self.channelnum*8+self.numtriggers*8, 8):
+	    n=self.channelnum
+	    while feil.sisDec.GetEntry(n):
+		feil.sisDec.GetEntry(n)
+		FILE=self.npyfilefolder+run+"count"+str(n)
+	  	arr=numpy.array(feil.sisDec.wf,dtype="int32")
+		numpy.save(FILE,arr)
+		n=n+8
+		print arr.dtype
+	print "done"
     def txtify(self, averages=10, event=None):
         """
         save each count to a .txt file 
