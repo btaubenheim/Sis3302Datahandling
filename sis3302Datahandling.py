@@ -21,7 +21,7 @@ ROOT.gSystem.Load(pathfinder.libPyOrcaROOT)
 ROOT.gSystem.Load(pathfinder.libWaveWaveBase)
 
 class orcadatamanipulation(object):
-    def __init__(self, orcafile='', rootfile='', channelnum=1, numtriggers=1):
+    def __init__(self, orcafile='', rootfile='', channelnum=0, numtriggers=1):
         """
         functions to transform Orca files to root) or ascii(averaged) files  
         """
